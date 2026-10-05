@@ -1,0 +1,88 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Netgear WAX214",
+        "description": "Indirizzo e credenziali dell'interfaccia web dell'access point.",
+        "data": {
+          "host": "Indirizzo IP",
+          "username": "Utente",
+          "password": "Password",
+          "port": "Porta HTTPS"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nuova password",
+        "description": "L'access point ha rifiutato la password salvata.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Password errata",
+      "cannot_connect": "Access point non raggiungibile"
+    },
+    "abort": {
+      "already_configured": "Questo access point è già configurato",
+      "reauth_successful": "Password aggiornata"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Intervallo di aggiornamento (secondi)",
+          "track_clients": "Crea un device tracker per ogni client Wi-Fi"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "clients": {
+        "name": "Client connessi"
+      },
+      "boot_time": {
+        "name": "Ultimo avvio"
+      },
+      "memory_used": {
+        "name": "Memoria usata"
+      },
+      "lan_port_speed": {
+        "name": "Velocità porta LAN"
+      },
+      "lan_rx": {
+        "name": "LAN ricevuti"
+      },
+      "lan_tx": {
+        "name": "LAN trasmessi"
+      },
+      "radio_clients": {
+        "name": "Client {band}"
+      },
+      "radio_channel": {
+        "name": "Canale {band}"
+      },
+      "radio_txpower": {
+        "name": "Potenza {band}"
+      },
+      "ssid_clients": {
+        "name": "Client {ssid}"
+      }
+    },
+    "binary_sensor": {
+      "radio_up": {
+        "name": "Radio {band}"
+      },
+      "ssid_up": {
+        "name": "SSID {ssid}"
+      }
+    },
+    "switch": {
+      "ssid": {
+        "name": "Wi-Fi {ssid}"
+      }
+    }
+  }
+}

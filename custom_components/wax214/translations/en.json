@@ -1,0 +1,88 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Netgear WAX214",
+        "description": "Address and credentials of the access point web interface.",
+        "data": {
+          "host": "IP address",
+          "username": "Username",
+          "password": "Password",
+          "port": "HTTPS port"
+        }
+      },
+      "reauth_confirm": {
+        "title": "New password",
+        "description": "The access point rejected the stored password.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid password",
+      "cannot_connect": "Cannot reach the access point"
+    },
+    "abort": {
+      "already_configured": "This access point is already configured",
+      "reauth_successful": "Password updated"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Update interval (seconds)",
+          "track_clients": "Create a device tracker for each Wi-Fi client"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "clients": {
+        "name": "Connected clients"
+      },
+      "boot_time": {
+        "name": "Last boot"
+      },
+      "memory_used": {
+        "name": "Memory used"
+      },
+      "lan_port_speed": {
+        "name": "LAN port speed"
+      },
+      "lan_rx": {
+        "name": "LAN received"
+      },
+      "lan_tx": {
+        "name": "LAN sent"
+      },
+      "radio_clients": {
+        "name": "Clients {band}"
+      },
+      "radio_channel": {
+        "name": "Channel {band}"
+      },
+      "radio_txpower": {
+        "name": "TX power {band}"
+      },
+      "ssid_clients": {
+        "name": "Clients {ssid}"
+      }
+    },
+    "binary_sensor": {
+      "radio_up": {
+        "name": "Radio {band}"
+      },
+      "ssid_up": {
+        "name": "SSID {ssid}"
+      }
+    },
+    "switch": {
+      "ssid": {
+        "name": "Wi-Fi {ssid}"
+      }
+    }
+  }
+}

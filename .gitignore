@@ -1,0 +1,5 @@
+# dati della rete locale raccolti dagli script di tools/: non pubblicare
+discovery/
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,14 @@
+{
+  "domain": "wax214",
+  "name": "Netgear WAX214",
+  "codeowners": [
+    "@domoluigi"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/domoluigi/ha-netgear-wax214",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/domoluigi/ha-netgear-wax214/issues",
+  "requirements": [],
+  "version": "0.3.0"
+}
