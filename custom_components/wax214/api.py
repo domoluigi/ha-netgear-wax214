@@ -203,7 +203,11 @@ class WaxClient:
 
     async def get_lan_status(self) -> dict[str, Any]:
         """iface_status/lan: traffico del bridge, uptime, porta eth0 e SSID come subdevices."""
-        data = await self.get_json("network/iface_status/lan")
+        return await self.get_bridge_status("lan")
+
+    async def get_bridge_status(self, bridge: str) -> dict[str, Any]:
+        """iface_status/<bridge>: lan (rete principale) o guest (rete ospiti, br-guest)."""
+        data = await self.get_json(f"network/iface_status/{bridge}")
         return data[0] if isinstance(data, list) and data else {}
 
     async def get_lan_port_speed(self) -> int | None:

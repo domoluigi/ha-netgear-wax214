@@ -19,12 +19,14 @@ Richiede Home Assistant **2026.3** o successivo.
 
 | Tipo | Entità |
 |---|---|
-| Sensori | Client connessi (totale, per banda, per SSID; elenco dei client negli attributi), canale 2.4/5 GHz, ultimo avvio, memoria usata, velocità porta LAN, traffico LAN ricevuto/trasmesso, potenza TX (disattivata) |
+| Sensori | Client connessi (totale, per banda, per SSID; elenco dei client negli attributi), client con segnale debole (sotto la soglia RSSI, con l'elenco), canale 2.4/5 GHz, velocità in tempo reale (Mbit/s) della LAN e di ogni radio in ricezione/trasmissione, ultimo avvio, memoria usata, velocità porta LAN, traffico LAN ricevuto/trasmesso, potenza TX (disattivata) |
 | Binary sensor | Radio 2.4/5 GHz attiva, SSID attivo |
 | Switch | Un interruttore per ogni SSID configurato. Quello del primo SSID (la rete principale) è creato **disattivato** |
 | Device tracker | Opzionale: uno per ogni client Wi-Fi visto (creati disattivati) |
 
-**Opzioni** (*Configura*): intervallo di aggiornamento (predefinito 30 s) e creazione dei device tracker (predefinito: no; spegnendola i tracker già creati vengono rimossi).
+**Opzioni** (*Configura*): intervallo di aggiornamento (predefinito 30 s), creazione dei device tracker (predefinito: no; spegnendola i tracker già creati vengono rimossi) e soglia del segnale debole (predefinita −75 dBm).
+
+Le velocità sono la media fra due letture consecutive (quindi sull'intervallo di aggiornamento); dopo un riavvio di Home Assistant o del Wi-Fi restano vuote per un ciclo. Quelle delle radio sommano le interfacce di tutti gli SSID, rete ospiti compresa.
 
 ## Accendere/spegnere un SSID: cosa sapere
 

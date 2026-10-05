@@ -109,6 +109,37 @@ SYSTEM_SENSORS: tuple[WaxSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: d.lan.get("tx_bytes"),
     ),
+    WaxSensorDescription(
+        key="lan_rx_rate",
+        translation_key="lan_rx_rate",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda d: d.rates.get("lan_rx"),
+    ),
+    WaxSensorDescription(
+        key="lan_tx_rate",
+        translation_key="lan_tx_rate",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda d: d.rates.get("lan_tx"),
+    ),
+    WaxSensorDescription(
+        key="weak_clients",
+        translation_key="weak_clients",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: len(d.weak),
+        attrs_fn=lambda d: {
+            "soglia": f"{d.weak_threshold} dBm",
+            "clients": [
+                {"name": c["hostname"] or c["mac"], "mac": c["mac"], "rssi": c["rssi"], "band": c["band"], "ssid": c["ssid"]}
+                for c in d.weak
+            ],
+        },
+    ),
 )
 
 
@@ -144,6 +175,26 @@ def _radio_sensors(dev: str, band: str) -> tuple[WaxSensorDescription, ...]:
             entity_category=EntityCategory.DIAGNOSTIC,
             entity_registry_enabled_default=False,
             value_fn=get("txpower"),
+        ),
+        WaxSensorDescription(
+            key=f"{dev}_rx_rate",
+            translation_key="radio_rx_rate",
+            placeholders=p,
+            device_class=SensorDeviceClass.DATA_RATE,
+            native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
+            value_fn=lambda d: d.rates.get(f"{dev}_rx"),
+        ),
+        WaxSensorDescription(
+            key=f"{dev}_tx_rate",
+            translation_key="radio_tx_rate",
+            placeholders=p,
+            device_class=SensorDeviceClass.DATA_RATE,
+            native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
+            value_fn=lambda d: d.rates.get(f"{dev}_tx"),
         ),
     )
 

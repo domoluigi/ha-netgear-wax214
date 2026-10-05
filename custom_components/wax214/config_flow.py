@@ -21,9 +21,11 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import WaxAuthError, WaxClient, WaxError
 from .const import (
     CONF_TRACK_CLIENTS,
+    CONF_WEAK_RSSI,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACK_CLIENTS,
+    DEFAULT_WEAK_RSSI,
     DEFAULT_USERNAME,
     DOMAIN,
     MIN_SCAN_INTERVAL,
@@ -119,6 +121,9 @@ class WaxOptionsFlow(OptionsFlow):
                     vol.Required(
                         CONF_TRACK_CLIENTS, default=opts.get(CONF_TRACK_CLIENTS, DEFAULT_TRACK_CLIENTS)
                     ): bool,
+                    vol.Required(
+                        CONF_WEAK_RSSI, default=opts.get(CONF_WEAK_RSSI, DEFAULT_WEAK_RSSI)
+                    ): vol.All(vol.Coerce(int), vol.Range(min=-95, max=-40)),
                 }
             ),
         )

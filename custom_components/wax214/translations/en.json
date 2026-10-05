@@ -33,7 +33,8 @@
       "init": {
         "data": {
           "scan_interval": "Update interval (seconds)",
-          "track_clients": "Create a device tracker for each Wi-Fi client"
+          "track_clients": "Create a device tracker for each Wi-Fi client",
+          "weak_rssi": "Weak signal threshold (dBm)"
         }
       }
     }
@@ -69,6 +70,21 @@
       },
       "ssid_clients": {
         "name": "Clients {ssid}"
+      },
+      "lan_rx_rate": {
+        "name": "LAN receive rate"
+      },
+      "lan_tx_rate": {
+        "name": "LAN transmit rate"
+      },
+      "radio_rx_rate": {
+        "name": "Wi-Fi {band} received"
+      },
+      "radio_tx_rate": {
+        "name": "Wi-Fi {band} sent"
+      },
+      "weak_clients": {
+        "name": "Clients with weak signal"
       }
     },
     "binary_sensor": {
