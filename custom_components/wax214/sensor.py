@@ -38,7 +38,17 @@ def _mem_used_pct(d: WaxData) -> float | None:
     if not m.get("memtotal"):
         return None
     used = m["memtotal"] - m["memfree"] - m["membuffers"] - m["memcached"]
-    return round(used * 100 / m["memtotal"], 1)
+    # intero: con un decimale il valore oscilla di continuo e scrive una riga ogni ciclo
+    return round(used * 100 / m["memtotal"])
+
+
+# I contatori dei byte crescono a ogni lettura: a passi di 100 MB scrivono una riga ogni
+# pochi minuti invece che ogni ciclo, con un errore sui totali giornalieri sotto lo 0,5 %.
+BYTE_STEP = 100_000_000
+
+
+def _stepped(value: int | None) -> int | None:
+    return None if value is None else value - value % BYTE_STEP
 
 
 def _client_list(d: WaxData, pred: Callable[[dict[str, Any]], bool]) -> list[dict[str, Any]]:
@@ -49,7 +59,8 @@ def _client_list(d: WaxData, pred: Callable[[dict[str, Any]], bool]) -> list[dic
             "ip": c["ip"],
             "ssid": c["ssid"],
             "band": c["band"],
-            "rssi": c["rssi"],
+            # niente rssi: cambia a ogni ciclo e scriverebbe una riga di stato nuova ogni volta
+            # anche se il numero di client non cambia (il segnale è nel sensore "segnale debole")
         }
         for c in sorted(d.clients.values(), key=lambda c: (c["hostname"] or c["mac"]).lower())
         if pred(c)
@@ -77,6 +88,7 @@ SYSTEM_SENSORS: tuple[WaxSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
         value_fn=_mem_used_pct,
     ),
     WaxSensorDescription(
@@ -96,7 +108,7 @@ SYSTEM_SENSORS: tuple[WaxSensorDescription, ...] = (
         suggested_display_precision=2,
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda d: d.lan.get("rx_bytes"),
+        value_fn=lambda d: _stepped(d.lan.get("rx_bytes")),
     ),
     WaxSensorDescription(
         key="lan_tx",
@@ -107,7 +119,7 @@ SYSTEM_SENSORS: tuple[WaxSensorDescription, ...] = (
         suggested_display_precision=2,
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda d: d.lan.get("tx_bytes"),
+        value_fn=lambda d: _stepped(d.lan.get("tx_bytes")),
     ),
     WaxSensorDescription(
         key="lan_rx_rate",

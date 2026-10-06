@@ -219,7 +219,7 @@ class WaxCoordinator(DataUpdateCoordinator[WaxData]):
             prev = self._prev.get(key)
             rate = None
             if value is not None and prev and value >= prev[0] and now > prev[1]:
-                rate = round((value - prev[0]) * 8 / (now - prev[1]) / 1_000_000, 2)
+                rate = round((value - prev[0]) * 8 / (now - prev[1]) / 1_000_000, 1)
             if value is not None:
                 self._prev[key] = (value, now)
             rates[key] = rate
