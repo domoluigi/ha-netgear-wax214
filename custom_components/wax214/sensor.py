@@ -18,7 +18,7 @@ from homeassistant.const import (
     UnitOfDataRate,
     UnitOfInformation,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import WaxConfigEntry
@@ -233,9 +233,21 @@ async def async_setup_entry(
     descriptions: list[WaxSensorDescription] = list(SYSTEM_SENSORS)
     for dev, radio in data.radios.items():
         descriptions.extend(_radio_sensors(dev, radio["band"]))
+    known = set(data.ssids)
     for key, ssid in data.ssids.items():
         descriptions.append(_ssid_sensor(key, ssid["name"]))
     async_add_entities(WaxSensor(coordinator, d) for d in descriptions)
+
+    @callback
+    def add_new_ssids() -> None:
+        """Un SSID creato sull'access point dopo l'avvio ottiene le sue entità senza riavvio."""
+        ssids = coordinator.data.ssids if coordinator.data else {}
+        new = {k: s for k, s in ssids.items() if k not in known}
+        if new:
+            known.update(new)
+            async_add_entities(WaxSensor(coordinator, _ssid_sensor(k, s["name"])) for k, s in new.items())
+
+    entry.async_on_unload(coordinator.async_add_listener(add_new_ssids))
 
 
 class WaxSensor(WaxEntity, SensorEntity):

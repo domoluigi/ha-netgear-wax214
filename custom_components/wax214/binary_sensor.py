@@ -6,7 +6,7 @@ from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import WaxConfigEntry
@@ -21,8 +21,20 @@ async def async_setup_entry(
     entities: list[BinarySensorEntity] = [
         WaxRadioBinarySensor(coordinator, dev, radio["band"]) for dev, radio in coordinator.data.radios.items()
     ]
+    known = set(coordinator.data.ssids)
     entities.extend(WaxSsidBinarySensor(coordinator, key, s["name"]) for key, s in coordinator.data.ssids.items())
     async_add_entities(entities)
+
+    @callback
+    def add_new_ssids() -> None:
+        """Un SSID creato sull'access point dopo l'avvio ottiene le sue entità senza riavvio."""
+        ssids = coordinator.data.ssids if coordinator.data else {}
+        new = {k: s for k, s in ssids.items() if k not in known}
+        if new:
+            known.update(new)
+            async_add_entities(WaxSsidBinarySensor(coordinator, k, s["name"]) for k, s in new.items())
+
+    entry.async_on_unload(coordinator.async_add_listener(add_new_ssids))
 
 
 class WaxRadioBinarySensor(WaxEntity, BinarySensorEntity):

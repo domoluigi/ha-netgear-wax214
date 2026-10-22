@@ -11,7 +11,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -29,7 +29,19 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: WaxConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
+    known = set(coordinator.data.ssids)
     async_add_entities(WaxSsidSwitch(coordinator, key, s["name"]) for key, s in coordinator.data.ssids.items())
+
+    @callback
+    def add_new_ssids() -> None:
+        """Un SSID creato sull'access point dopo l'avvio ottiene le sue entità senza riavvio."""
+        ssids = coordinator.data.ssids if coordinator.data else {}
+        new = {k: s for k, s in ssids.items() if k not in known}
+        if new:
+            known.update(new)
+            async_add_entities(WaxSsidSwitch(coordinator, k, s["name"]) for k, s in new.items())
+
+    entry.async_on_unload(coordinator.async_add_listener(add_new_ssids))
 
 
 class WaxSsidSwitch(WaxEntity, SwitchEntity):
