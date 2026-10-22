@@ -34,7 +34,8 @@
         "data": {
           "scan_interval": "Update interval (seconds)",
           "track_clients": "Create a device tracker for each Wi-Fi client",
-          "weak_rssi": "Weak signal threshold (dBm)"
+          "weak_rssi": "Weak signal threshold (dBm)",
+          "switch_ssids": "SSIDs with a switch (changing one restarts Wi-Fi for ~30 s)"
         }
       }
     }

@@ -1,8 +1,9 @@
 """Interruttori per accendere/spegnere gli SSID.
 
 Ogni cambio riavvia TUTTE le radio dell'access point: ~35 s senza Wi-Fi per tutti gli SSID.
-L'interruttore della rete principale (ssid_1) è creato disattivato, per evitare di spegnere
-per sbaglio la rete da cui dipendono i dispositivi di casa.
+Un interruttore esiste solo per gli SSID scelti nelle opzioni (predefinito: solo la rete ospiti,
+ssid_2): sono azioni che scrivono sull'access point, quindi si attivano su richiesta. L'interruttore
+della rete principale (ssid_1), se scelto, è creato disattivato.
 """
 
 from __future__ import annotations
@@ -13,10 +14,12 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import WaxConfigEntry
 from .api import WaxError, WaxUnexpectedChanges
+from .const import CONF_SWITCH_SSIDS, DEFAULT_SWITCH_SSIDS
 from .coordinator import WaxCoordinator
 from .entity import WaxEntity
 
@@ -29,8 +32,20 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: WaxConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
+    wanted = set(entry.options.get(CONF_SWITCH_SSIDS, DEFAULT_SWITCH_SSIDS))
+
+    # via gli interruttori degli SSID non (più) scelti, rimasti da versioni precedenti
+    registry = er.async_get(hass)
+    prefix = f"{entry.unique_id}_"
+    for reg in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if reg.domain == "switch" and reg.unique_id.startswith(prefix) and reg.unique_id.endswith("_switch"):
+            if reg.unique_id[len(prefix) : -len("_switch")] not in wanted:
+                registry.async_remove(reg.entity_id)
+
     known = set(coordinator.data.ssids)
-    async_add_entities(WaxSsidSwitch(coordinator, key, s["name"]) for key, s in coordinator.data.ssids.items())
+    async_add_entities(
+        WaxSsidSwitch(coordinator, key, s["name"]) for key, s in coordinator.data.ssids.items() if key in wanted
+    )
 
     @callback
     def add_new_ssids() -> None:
@@ -39,7 +54,7 @@ async def async_setup_entry(
         new = {k: s for k, s in ssids.items() if k not in known}
         if new:
             known.update(new)
-            async_add_entities(WaxSsidSwitch(coordinator, k, s["name"]) for k, s in new.items())
+            async_add_entities(WaxSsidSwitch(coordinator, k, s["name"]) for k, s in new.items() if k in wanted)
 
     entry.async_on_unload(coordinator.async_add_listener(add_new_ssids))
 

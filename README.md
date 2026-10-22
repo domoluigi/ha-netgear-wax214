@@ -20,11 +20,11 @@ Richiede Home Assistant **2026.3** o successivo.
 | Tipo | Entità |
 |---|---|
 | Sensori | Client connessi (totale, per banda, per SSID; elenco dei client negli attributi), client con segnale debole (sotto la soglia RSSI, con l'elenco), canale 2.4/5 GHz, velocità in tempo reale (Mbit/s) della LAN e di ogni radio in ricezione/trasmissione, ultimo avvio, memoria usata, velocità porta LAN, traffico LAN ricevuto/trasmesso, potenza TX (disattivata) |
-| Binary sensor | Radio 2.4/5 GHz attiva, SSID attivo |
-| Switch | Un interruttore per ogni SSID configurato. Quello del primo SSID (la rete principale) è creato **disattivato**. Gli SSID creati sull'access point dopo l'installazione ottengono sensori, binary sensor e interruttore da soli, entro un ciclo di aggiornamento |
+| Binary sensor | Radio 2.4/5 GHz attiva, SSID attivo. Gli SSID creati sull'access point dopo l'installazione ottengono da soli i loro sensori e binary sensor, entro un ciclo di aggiornamento |
+| Switch | Un interruttore per gli SSID scelti nelle opzioni: **di predefinito solo la rete ospiti** (`ssid_2`), perché sono azioni che scrivono sull'access point. Se scegli anche il primo SSID (la rete principale), il suo interruttore è creato **disattivato** |
 | Device tracker | Opzionale: uno per ogni client Wi-Fi visto (creati disattivati) |
 
-**Opzioni** (*Configura*): intervallo di aggiornamento (predefinito 30 s), creazione dei device tracker (predefinito: no; spegnendola i tracker già creati vengono rimossi) e soglia del segnale debole (predefinita −75 dBm).
+**Opzioni** (*Configura*): intervallo di aggiornamento (predefinito 30 s), creazione dei device tracker (predefinito: no; spegnendola i tracker già creati vengono rimossi) soglia del segnale debole (predefinita −75 dBm) e SSID con interruttore (predefinito: solo la rete ospiti; gli interruttori degli SSID non scelti vengono rimossi).
 
 Per non riempire il database di Home Assistant: i contatori del traffico LAN avanzano a passi di 100 MB, la memoria usata è un numero intero, le velocità hanno un decimale e l'elenco dei client negli attributi non include il segnale (cambierebbe a ogni ciclo). Le velocità sono la media fra due letture consecutive (quindi sull'intervallo di aggiornamento); dopo un riavvio di Home Assistant o del Wi-Fi restano vuote per un ciclo. Quelle delle radio sommano le interfacce di tutti gli SSID, rete ospiti compresa.
 

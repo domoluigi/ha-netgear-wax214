@@ -17,13 +17,21 @@ from homeassistant.const import (
 )
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .api import WaxAuthError, WaxClient, WaxError
 from .const import (
+    CONF_SWITCH_SSIDS,
     CONF_TRACK_CLIENTS,
     CONF_WEAK_RSSI,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SWITCH_SSIDS,
     DEFAULT_TRACK_CLIENTS,
     DEFAULT_WEAK_RSSI,
     DEFAULT_USERNAME,
@@ -105,12 +113,18 @@ class WaxConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class WaxOptionsFlow(OptionsFlow):
-    """Intervallo di aggiornamento e device tracker dei client."""
+    """Intervallo di aggiornamento, device tracker dei client, soglia del segnale e SSID con interruttore."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
         opts = self.config_entry.options
+        coordinator = getattr(self.config_entry, "runtime_data", None)
+        ssids = coordinator.data.ssids if coordinator and coordinator.data else {}
+        current = list(opts.get(CONF_SWITCH_SSIDS, DEFAULT_SWITCH_SSIDS))
+        choices = {key: f"{s['name']} ({key})" for key, s in ssids.items()}
+        for key in current:  # una scelta salvata resta visibile anche se l'SSID non c'è al momento
+            choices.setdefault(key, key)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -124,6 +138,13 @@ class WaxOptionsFlow(OptionsFlow):
                     vol.Required(
                         CONF_WEAK_RSSI, default=opts.get(CONF_WEAK_RSSI, DEFAULT_WEAK_RSSI)
                     ): vol.All(vol.Coerce(int), vol.Range(min=-95, max=-40)),
+                    vol.Optional(CONF_SWITCH_SSIDS, default=current): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[SelectOptionDict(value=k, label=v) for k, v in sorted(choices.items())],
+                            multiple=True,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
                 }
             ),
         )

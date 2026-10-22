@@ -34,7 +34,8 @@
         "data": {
           "scan_interval": "Intervallo di aggiornamento (secondi)",
           "track_clients": "Crea un device tracker per ogni client Wi-Fi",
-          "weak_rssi": "Soglia segnale debole (dBm)"
+          "weak_rssi": "Soglia segnale debole (dBm)",
+          "switch_ssids": "SSID con interruttore (cambiarli riavvia il Wi-Fi per ~30 s)"
         }
       }
     }
