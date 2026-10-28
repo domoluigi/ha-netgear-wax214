@@ -7,9 +7,6 @@ CONF_TRACK_CLIENTS = "track_clients"
 DEFAULT_TRACK_CLIENTS = False
 CONF_WEAK_RSSI = "weak_rssi"
 DEFAULT_WEAK_RSSI = -75
-CONF_SWITCH_SSIDS = "switch_ssids"
-# ssid_2 è lo slot della rete ospiti, quello da cui è stato ricavato il modello del Save (wireless.py)
-DEFAULT_SWITCH_SSIDS = ["ssid_2"]
 DEFAULT_PORT = 443
 DEFAULT_USERNAME = "admin"
 DEFAULT_SCAN_INTERVAL = 30

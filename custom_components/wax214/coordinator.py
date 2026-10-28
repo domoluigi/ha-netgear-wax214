@@ -134,6 +134,11 @@ class WaxCoordinator(DataUpdateCoordinator[WaxData]):
                 key = str(net.get("networkname", "")).split("_", 1)[-1]  # wifi0_ssid_2 -> ssid_2
                 active = bool(net.get("up")) and net.get("bssid") not in (None, "", EMPTY_MAC)
                 assoc = net.get("assoclist") or {}
+                if active and r["channel"] is None and _int(net.get("channel")) is not None:
+                    # il canale della radio manca se la sua rete principale è spenta su questa banda:
+                    # vale quello di una rete attiva (la radio ne ha uno solo)
+                    r["channel"] = _int(net.get("channel"))
+                    r["frequency"] = net.get("frequency")
                 if active and r["txpower"] is None:
                     r["txpower"] = _int(net.get("txpower"))
                     rate = str(net.get("bitrate", "")).strip()

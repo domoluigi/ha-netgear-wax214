@@ -28,7 +28,7 @@ from .const import (
 )
 from .coordinator import WaxCoordinator
 
-BASE_PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
+BASE_PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 type WaxConfigEntry = ConfigEntry[WaxCoordinator]
 
@@ -68,9 +68,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: WaxConfigEntry) -> bool:
 
     platforms = _platforms(entry)
     coordinator.platforms = platforms
+    # integrazione di sola lettura: via gli interruttori SSID creati dalle versioni precedenti
+    registry = er.async_get(hass)
+    for reg in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if reg.domain == Platform.SWITCH:
+            registry.async_remove(reg.entity_id)
     if Platform.DEVICE_TRACKER not in platforms:
         # opzione spenta: via i tracker creati in precedenza
-        registry = er.async_get(hass)
         for reg in er.async_entries_for_config_entry(registry, entry.entry_id):
             if reg.domain == Platform.DEVICE_TRACKER:
                 registry.async_remove(reg.entity_id)

@@ -16,12 +16,10 @@ from typing import Any
 
 import aiohttp
 
-from .wireless import WirelessState, build_fields, expected_changes
 
 LOGIN_PATH = "/cgi-bin/luci"
 STOK_RE = re.compile(r";stok=([0-9a-f]{8,})")
 MYID_RE = r'myid="{}"[^>]*>\s*([^<]*?)\s*<'
-SERVICECTL_RE = re.compile(r"servicectl/restart/([\w,\-]+)'")
 
 
 class WaxError(Exception):
@@ -34,15 +32,6 @@ class WaxAuthError(WaxError):
 
 class WaxConnectionError(WaxError):
     """Access point non raggiungibile o risposta inattesa."""
-
-
-class WaxUnexpectedChanges(WaxError):
-    """Le modifiche in sospeso non sono quelle attese: niente è stato applicato."""
-
-    def __init__(self, message: str, got: dict, expected: dict) -> None:
-        super().__init__(f"{message} (trovate {got}, attese {expected})")
-        self.got = got
-        self.expected = expected
 
 
 def hash_password(password: str) -> str:
@@ -213,134 +202,3 @@ class WaxClient:
     async def get_lan_port_speed(self) -> int | None:
         body = (await self.get_text("status/lan_port_speed")).strip()
         return int(body) if body.isdigit() else None
-
-    # ---------------------------------------------------------------- scritture (UCI)
-    #
-    # Le modifiche passano da LuCI in due tempi: il POST del modulo le mette "in sospeso"
-    # (uci/changes), saveapply le rende effettive riavviando il Wi-Fi (~35 s, tutti gli SSID).
-    # Prima di applicare si confronta l'elenco in sospeso con quello atteso: se c'è altro
-    # si annulla tutto con revert.
-
-    async def post_form(self, path: str, fields: list[tuple[str, str]]) -> None:
-        async with self._lock:
-            if not self._stok:
-                await self.login()
-            url = f"{self._base}/cgi-bin/luci/;stok={self._stok}/admin/{path}"
-            try:
-                async with self._session.post(
-                    url,
-                    data=fields,
-                    cookies=self._cookies,
-                    headers={"Referer": url, "Origin": self._base},
-                    allow_redirects=False,
-                    ssl=False,
-                    timeout=self._timeout,
-                ) as resp:
-                    body = await resp.text(errors="replace")
-                    status = resp.status
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-                raise WaxConnectionError(f"POST {path} fallito: {err}") from err
-        if self._is_login_page(status, body):
-            raise WaxAuthError("Sessione scaduta durante il salvataggio")
-        if status not in (200, 302):
-            raise WaxConnectionError(f"POST {path}: HTTP {status}")
-
-    async def get_pending_changes(self) -> dict[str, str | None]:
-        """uci/changes -> {'wireless.wifi0_ssid_2.disabled': '0', ...}; le opzioni rimosse valgono None."""
-        html = await self.get_text("uci/changes")
-        start = html.find('class="uci-change-list"')
-        if start < 0:
-            return {}
-        block = html[start : html.find("</div>", start)]
-        out: dict[str, str | None] = {}
-        for tag, name, value in re.findall(r"<(ins|del)>([\w.@\-\[\]]+)=<strong>(.*?)</strong>", block):
-            out[name] = value if tag == "ins" else None
-        return out
-
-    async def _action(self, path: str) -> str:
-        """GET di un comando (revert/saveapply): accetta anche il redirect finale."""
-        await self.get_text("system/ajax_setCsrf")
-        async with self._lock:
-            status, _ctype, body = await self._raw_get(path, {"redir": ""})
-        if self._is_login_page(status, body):
-            raise WaxAuthError(f"Sessione scaduta durante {path}")
-        if status not in (200, 302):
-            raise WaxConnectionError(f"GET {path}: HTTP {status}")
-        return body
-
-    async def revert_changes(self) -> None:
-        await self._action("uci/revert")
-
-    async def apply_changes(self, timeout: float = 120) -> list[str]:
-        """saveapply registra le modifiche; il riavvio dei servizi lo lancia il JavaScript della
-        pagina (servicectl/restart/<config>), poi si attende che servicectl/status dica 'finish'."""
-        body = await self._action("uci/saveapply")
-        match = SERVICECTL_RE.search(body)
-        if not match:
-            return []
-        configs = match.group(1)
-        async with self._lock:
-            await self._raw_get(f"restart/{configs}", None, root="servicectl")
-        loop = asyncio.get_running_loop()
-        deadline = loop.time() + timeout
-        while loop.time() < deadline:
-            await asyncio.sleep(3)
-            try:
-                async with self._lock:
-                    _s, _c, status = await self._raw_get("status", None, root="servicectl")
-            except WaxConnectionError:
-                continue  # durante il riavvio l'AP può non rispondere
-            if status.strip() == "finish":
-                return configs.split(",")
-        raise WaxConnectionError(f"Riavvio di {configs} non terminato entro {timeout:.0f} s")
-
-    async def set_ssid_enabled(self, key: str, enable: bool, system_name: str, apply: bool = True) -> dict[str, str]:
-        """Accende/spegne un SSID (es. 'ssid_2') su entrambe le radio.
-
-        Salva il modulo intero, poi applica solo se uci/changes contiene esattamente le
-        modifiche attese; altrimenti annulla e solleva WaxUnexpectedChanges. Con apply=False
-        annulla sempre (prova a secco). Restituisce le modifiche in sospeso viste dopo il Save.
-        """
-        current = WirelessState.from_overview(await self.get_overview(1))
-        if current.is_on(key) == enable:
-            return {}
-        target = current.with_ssid(key, enable)
-        expected = expected_changes(current, target)
-        # le righe "disabled" dell'SSID devono comparire; ath_count e dhcp.guest.ignore possono
-        # mancare se la configurazione ha già quel valore. Nient'altro è ammesso.
-        required = {k: v for k, v in expected.items() if k.endswith(f"_{key}.disabled")}
-
-        def matches(changes: dict[str, str | None]) -> bool:
-            return all(changes.get(k) == v for k, v in required.items()) and all(
-                expected.get(k) == v for k, v in changes.items()
-            )
-
-        pending = await self.get_pending_changes()
-        if pending and not matches(pending):
-            # modifiche altrui (es. dall'interfaccia web): non si toccano
-            raise WaxUnexpectedChanges("Ci sono già altre modifiche in sospeso sull'access point", pending, expected)
-        if not pending:
-            await self.post_form("network/wireless_device", build_fields(current, target, system_name))
-        got = await self.get_pending_changes()
-        if not matches(got):
-            await self.revert_changes()
-            raise WaxUnexpectedChanges("Il Save ha prodotto modifiche diverse dall'atteso: annullate", got, expected)
-        if apply:
-            await self.apply_changes()
-            # la conferma del riavvio non basta: si guarda lo stato reale delle radio
-            loop = asyncio.get_running_loop()
-            deadline = loop.time() + 90
-            while True:
-                try:
-                    now = WirelessState.from_overview(await self.get_overview(1))
-                    if now.is_on(key) == enable:
-                        break
-                except WaxConnectionError:
-                    pass
-                if loop.time() > deadline:
-                    raise WaxConnectionError(f"{key}: applicato ma lo stato non è cambiato entro 90 s")
-                await asyncio.sleep(5)
-        elif not pending:
-            # prova a secco: si annulla solo ciò che ha salvato questa chiamata
-            await self.revert_changes()
-        return got
